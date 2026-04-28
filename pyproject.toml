@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "modelsentinel"
+version = "1.0.0"
+description = "Configuration-driven predictive model monitoring framework for Kubeflow Pipelines"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [{name = "ModelSentinel Team"}]
+
+dependencies = [
+    "anthropic>=0.28.0",
+    "pydantic>=2.7.0",
+    "pyyaml>=6.0.1",
+    "kfp>=2.7.0",
+    "google-cloud-aiplatform>=1.52.0",
+    "google-cloud-bigquery>=3.20.0",
+    "google-cloud-storage>=2.16.0",
+    "pyspark>=3.5.0",
+    "scipy>=1.13.0",
+    "scikit-learn>=1.4.0",
+    "shap>=0.45.0",
+    "pandas>=2.2.0",
+    "numpy>=1.26.0",
+    "questionary>=2.0.1",
+    "click>=8.1.7",
+    "ipywidgets>=8.1.2",
+    "jinja2>=3.1.4",
+    "slack-sdk>=3.27.0",
+    "requests>=2.31.0",
+    "rich>=13.7.0",
+]
+
+[project.optional-dependencies]
+azure = ["azure-ai-ml>=1.15.0"]
+cp4d  = ["ibm-watson-machine-learning>=1.0.257"]
+dev   = ["pytest>=8.1.0","pytest-cov>=5.0.0","pytest-mock>=3.14.0","mypy>=1.9.0","ruff>=0.4.0"]
+
+[project.scripts]
+modelsentinel = "modelsentinel.ui.cli_collector:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["modelsentinel"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=modelsentinel --cov-report=term-missing"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

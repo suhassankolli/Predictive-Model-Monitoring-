@@ -1,0 +1,155 @@
+# ModelSentinel — Example monitoring configuration
+# Credit risk PD model (SR 11-7 regulated, high-risk)
+# Run: modelsentinel validate --config monitoring-config.yaml
+
+modelsentinel_version: "1.0"
+
+model:
+  model_id: "credit-risk-pd-v3"
+  version: "3.2.1"
+  framework: "xgboost"
+  task_type: "binary_classification"
+  risk_tier: "high"
+  owner: "risk-models@bank.com"
+  business_domain: "credit_risk"
+  deployment_date: "2024-06-01"
+  registry_uri: "projects/my-project/locations/us-central1/models/123"
+
+features:
+  numerical:
+    - name: "annual_income"
+      never_null: true
+      min_value: 0
+      max_value: 10000000
+    - name: "debt_to_income"
+      never_null: true
+      min_value: 0.0
+      max_value: 5.0
+    - name: "credit_utilisation"
+  categorical:
+    - name: "employment_status"
+      allowed_values: ["employed","self_employed","unemployed","retired"]
+      never_null: true
+    - name: "loan_purpose"
+      allowed_values: ["home","auto","education","medical","other"]
+  protected_attributes:
+    - name: "age_band"
+      reference_group: "25-45"
+    - name: "gender"
+      reference_group: "male"
+
+reference:
+  type: "bigquery"
+  table: "project.monitoring.credit_risk_reference_v3"
+  date_column: "score_date"
+  start_date: "2024-01-01"
+  end_date: "2024-05-31"
+
+production:
+  type: "bigquery"
+  table: "project.scoring.credit_risk_predictions"
+  date_column: "score_date"
+  window_days: 30
+  record_id_column: "application_id"
+  score_column: "pd_score"
+
+actuals:
+  type: "bigquery"
+  table: "project.credit.loan_outcomes"
+  label_column: "defaulted_90d"
+  join_key: "application_id"
+  label_lag_days: 90
+
+monitoring:
+  data_drift:
+    enabled: true
+    methods: ["ks", "psi", "jsd"]
+    numerical_threshold_psi: 0.10
+    categorical_threshold_tvd: 0.05
+    alert_severity: "warning"
+
+  concept_drift:
+    enabled: true
+    proxy_methods: ["adversarial_validation"]
+    adversarial_auc_threshold: 0.65
+
+  model_performance:
+    enabled: true
+    metrics: ["auc_roc", "ks_statistic", "gini", "brier_score"]
+    auc_roc_min: 0.75
+    ks_statistic_min: 0.30
+    calibration_ece_max: 0.05
+
+  data_quality:
+    enabled: true
+    null_rate_max_multiplier: 2.0
+    outlier_method: "iqr"
+    outlier_rate_max: 0.02
+    check_schema: true
+    freshness_sla_hours: 24
+
+  fairness:
+    enabled: true
+    disparate_impact_min: 0.80
+    equalised_odds_gap_max: 0.05
+    alert_severity: "critical"
+
+  population_stability:
+    enabled: true
+    psi_green_threshold: 0.10
+    psi_amber_threshold: 0.20
+    psi_red_threshold: 0.25
+    binning_strategy: "equal_frequency"
+    n_bins: 10
+    compute_csi: true
+
+  operational_health:
+    enabled: true
+    latency_p95_ms_max: 200
+    latency_p99_ms_max: 500
+    error_rate_max: 0.001
+
+  retraining_triggers:
+    enabled: true
+    rules:
+      - metric: "psi_score"
+        threshold: 0.25
+        direction: "above"
+        cooldown_days: 30
+      - metric: "auc_roc"
+        threshold: 0.75
+        direction: "below"
+        cooldown_days: 14
+    scheduled_review_months: 3
+
+alerting:
+  channels:
+    - type: "slack"
+      webhook_url: "${SLACK_WEBHOOK_URL}"
+      severities: ["warning", "critical"]
+    - type: "pagerduty"
+      routing_key: "${PD_ROUTING_KEY}"
+      severities: ["critical"]
+    - type: "email"
+      recipients: ["mro-team@bank.com", "risk-models@bank.com"]
+      severities: ["critical"]
+  deduplication_window_minutes: 60
+
+schedule:
+  cron: "0 6 * * *"
+  timezone: "UTC"
+  max_run_duration_minutes: 120
+
+governance:
+  sr_11_7_reporting: true
+  report_frequency: "quarterly"
+  eu_ai_act_logging: true
+  audit_retention_years: 7
+  compliance_report_recipients: ["mro-lead@bank.com"]
+
+platform:
+  type: "vertex_ai"
+  project: "my-gcp-project"
+  location: "us-central1"
+  pipeline_root: "gs://my-bucket/modelsentinel"
+  machine_type: "n2-standard-8"

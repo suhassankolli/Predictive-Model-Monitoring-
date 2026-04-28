@@ -1,0 +1,50 @@
+
+# --- ENVIRONMENT VARIABLES (CRITICAL) ---
+.env
+.env.*
+!.env.example
+secrets.toml
+
+# --- VIRTUAL ENVIRONMENTS ---
+venv/
+.venv/
+.venvCodeAudit
+venvCodeAudit
+env/
+bin/
+lib/
+share/
+
+# --- PYTHON BYTE-CODE / CACHE ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# --- DISTRIBUTION / PACKAGING ---
+dist/
+build/
+*.egg-info/
+*.egg
+.installed.cfg
+
+# --- UNIT TEST / COVERAGE REPORTS ---
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+nosetests.xml
+coverage.xml
+*.cover
+
+# --- OS-SPECIFIC FILES ---
+.DS_Store
+Thumbs.db
+
+# --- EDITOR-SPECIFIC (Optional) ---
+.vscode/
+.idea/
+*.swp
